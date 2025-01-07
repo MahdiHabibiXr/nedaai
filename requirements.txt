@@ -1,0 +1,8 @@
+https://github.com/KurimuzonAkuma/pyrogram/archive/dev.zip
+requests
+json-advanced
+singleton_package
+usso
+replicate
+ufiles
+inaSpeechSegmenter
