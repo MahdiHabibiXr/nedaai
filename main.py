@@ -1,4 +1,9 @@
 import msgs
+from dotenv import load_dotenv
+import os
+
+load_dotenv(".env")
+
 from pyrogram import Client, filters
 from pyrogram.types import (
     InlineKeyboardMarkup,
@@ -11,14 +16,15 @@ from db import create_user, user_exists, update_user_column, get_users_columns
 
 from uploader import upload_file
 import rvc
-import os
 import json
 
-links = ["@aiticle"]
-key = os.environ["TOKEN"]
+links = ["@aiticle", "@nedaaiofficial"]
+
 bot = Client(
-    "sessions/mahdi",
-    bot_token=key,
+    "sessions/nedaai",
+    api_id=os.getenv("API_ID"),
+    api_hash=os.getenv("API_HASH"),
+    bot_token=os.getenv("TOKEN"),
 )
 
 
@@ -38,35 +44,55 @@ async def start_text(client, message):
     chat_id = message.chat.id
     username = message.from_user.username
 
-    # Check if user exists; if not, create one
-    if not user_exists(chat_id):
-        create_user(chat_id, username)
+    # Check if user has joined required channels
+    if not_joined_channels:
+        buttons = []
+        for channel in not_joined_channels:
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"{channel}",
+                        url=f"https://t.me/{channel.replace('@', '')}",
+                    )
+                ]
+            )
 
-        # Check if user is invited, if yes add reward credits to inviter
-        if len(message.text.split(" ")) == 2:
-            invited_by = message.text.split(" ")[1]
-            update_user_column(chat_id, "refs", 1, True)
+        reply_markup = InlineKeyboardMarkup(buttons)
+        await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
-    await message.reply(msgs.start)
+    else:
+        # Check if user exists; if not, create one
+        if not user_exists(chat_id):
+            create_user(chat_id, username)
+
+            # Check if user is invited, if yes add reward credits to inviter
+            if len(message.text.split(" ")) == 2:
+                invited_by = message.text.split(" ")[1]
+                update_user_column(invited_by, "refs", 1, True)
+                update_user_column(invited_by, "credits", msgs.invitation_gift, True)
+
+        await message.reply(msgs.start)
 
 
 @bot.on_message(filters.private & (filters.voice | filters.audio))
 async def get_voice_or_audio(client, message):
     t_id = message.chat.id
     media = message.voice or message.audio
+    duration = media.duration
 
     if media and not message.from_user.is_bot:
         # save file
         file_id = media.file_id
-        file = await client.download_media(
-            file_id, file_name=file_name_gen(t_id, file_id)
-        )
+        file = await client.download_media(file_id, file_name=f"files/{t_id}/voice.ogg")
 
         # upload file to pixiee
         file_url = upload_file(file, f"{file_id}.ogg")
 
         # add the audio to database
         update_user_column(t_id, "audio", file_url)
+
+        # add the audio duration to database
+        update_user_column(t_id, "duration", duration)
 
         # generate the available models as buttons from models.json
         buttons = create_reply_markup(generate_model_list("models.json"))
@@ -82,14 +108,41 @@ async def callbacks(client, callback_query):
     await message.delete()
 
     # seleted the voice models
-    # TODO : Credits management
     if data.startswith("voice_"):
         model_name = data.replace("voice_", "")
-        model_title = get_value_from_json("models.json", model_name)["name"]
-        model_url = get_value_from_json("models.json", model_name)["url"]
+        update_user_column(chat_id, "model_name", model_name)
+
+        buttons = create_reply_markup(msgs.pitch_btns)
+        await message.reply(msgs.pitch_select, reply_markup=buttons)
+
+    # TODO : Add any generation to generations table
+    elif data.startswith("pitch_"):
+        # check if user has enough credits
+        user = get_users_columns(chat_id, ["duration", "credits"])
+        credits = user["credits"]
+        duration = user["duration"]
+
+        if credits < duration:
+            await message.reply(msgs.no_credits)
+            return
+
+        # update user credits
+        update_user_column(chat_id, "credits", credits - duration)
+
+        # get pitch
+        pitch = int(data.replace("pitch_", ""))
+
+        # get model from database
+        model_name = get_users_columns(chat_id, "model_name")["model_name"]
+
+        # get model data from models.json
+        model_data = get_value_from_json("models.json", model_name)
+        model_title = model_data["name"]
+        model_url = model_data["url"]
         audio = get_users_columns(chat_id, "audio")["audio"]
-        pitch = get_value_from_json("models.json", model_name)["pitch"]
-        rvc_model = get_value_from_json("models.json", model_name)["type"]
+        rvc_model = model_data["type"]
+
+        # create rvc conversion to replicate
         rvc.create_rvc_conversion(
             audio,
             model_url,
@@ -98,7 +151,53 @@ async def callbacks(client, callback_query):
             voice_name=model_title,
             rvc_model=rvc_model,
         )
-        await message.reply("Proccessing now")
+
+        await message.reply(msgs.proccessing)
+
+
+@bot.on_message(filters.command("invite"))
+async def invite_command(client, message):
+    chat_id = message.from_user.id
+
+    # Get user's current refs count
+    user_data = get_users_columns(chat_id, ["refs", "credits"])
+    if user_data is None:
+        return
+
+    refs = user_data["refs"]
+    credits = user_data["credits"]
+
+    # Create unique invite link
+    bot_info = await client.get_me()
+    invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
+
+    await message.reply(f"{msgs.banner_msg}\n\n{invite_link}")
+
+    await message.reply(
+        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits)
+    )
+
+
+@bot.on_message(filters.command("buy_credits"))
+async def buy_credits_command(client, message):
+    chat_id = message.from_user.id
+
+    # Get user's current credits
+    user_data = get_users_columns(chat_id, "credits")
+    if user_data is None:
+        return
+
+    credits = user_data["credits"]
+
+    await message.reply(
+        f"💰 خرید اعتبار\n\n"
+        f"🔸 اعتبار فعلی شما: **{credits} ثانیه**\n\n"
+        "🛍 بسته‌های اعتباری:\n\n"
+        "▫️ ۳۰۰ ثانیه معادل ۱۰ درخواست: ۲۹ هزار تومان\n"
+        "▫️ ۶۰۰ ثانیه معادل ۲۰ درخواست: ۴۹ هزار تومان\n"
+        "▫️ ۱۸۰۰ ثانیه معادل ۶۰ درخواست: ۱۲۹ هزار تومان\n\n"
+        "📱 برای خرید با پشتیبانی در ارتباط باشید:\n@VoiceClonerSupport"
+    )
 
 
 def create_reply_markup(button_list):

@@ -1,4 +1,5 @@
 import sqlite3
+import msgs
 
 DB_NAME = "voice_cloner.db"
 
@@ -46,10 +47,10 @@ def create_user(chat_id, username=None):
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO users (chat_id, username) 
-        VALUES (?, ?)
+        INSERT INTO users (chat_id, username, credits) 
+        VALUES (?, ?, ?)
     """,
-        (chat_id, username),
+        (chat_id, username, msgs.initial_gift),
     )
     conn.commit()
     conn.close()

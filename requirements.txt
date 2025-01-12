@@ -1,9 +1,9 @@
-pyrogram
 https://github.com/KurimuzonAkuma/pyrogram/archive/dev.zip
+TgCrypto
 requests
 json-advanced
 singleton_package
 usso
 replicate
 ufiles
-inaSpeechSegmenter
+python-dotenv

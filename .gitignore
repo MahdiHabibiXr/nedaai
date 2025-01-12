@@ -5,3 +5,4 @@ models
 files
 .env
 *.json
+gender-detection.py
