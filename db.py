@@ -20,6 +20,8 @@ def create_users_table():
         credits INTEGER DEFAULT 0,            -- Remaining free credits
         audio TEXT,                            -- Path or URL of the latest audio file
         refs INTEGER DEFAULT 0,               -- Number of invitations
+        model_name TEXT,
+        duration INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- User creation timestamp
     );
     """)
