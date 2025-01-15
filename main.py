@@ -4,7 +4,7 @@ import os
 
 load_dotenv(".env")
 
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
@@ -96,7 +96,9 @@ async def get_voice_or_audio(client, message):
 
         # generate the available models as buttons from models.json
         buttons = create_reply_markup(generate_model_list("models.json"))
-        await message.reply(msgs.voice_select, reply_markup=buttons)
+        await message.reply(
+            msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
+        )
 
 
 @bot.on_callback_query()
@@ -104,6 +106,10 @@ async def callbacks(client, callback_query):
     message = callback_query.message
     data = callback_query.data
     chat_id = callback_query.from_user.id
+
+    if data.startswith("cat_"):
+        await callback_query.answer(msgs.select_category)
+        return
 
     await message.delete()
 
@@ -191,6 +197,25 @@ async def buy_credits_command(client, message):
     credits = user_data["credits"]
 
     await message.reply(msgs.credits_message.format(credits=credits))
+
+
+@bot.on_message(filters.command("menu"))
+async def menu_command(client, message):
+    msg = (
+        "<b>bold</b>, "
+        "<i>italic</i>, "
+        "<u>underline</u>, "
+        "<s>strike</s>, "
+        "<spoiler>spoiler</spoiler>, "
+        '<a href="https://pyrogram.org/">URL</a>, '
+        "<code>code</code>, "
+        "<emoji id='5411225014148014586'>🔴</emoji>\n"
+        '<pre language="python">\n'
+        "for i in range(10):\n"
+        "    print(i)\n"
+        "</pre>"
+    )
+    await message.reply(msg, parse_mode=enums.ParseMode.HTML)
 
 
 def create_reply_markup(button_list):
@@ -283,25 +308,58 @@ def get_files_by_chat_id(chat_id):
 
 def generate_model_list(json_file):
     """
-    Generate a list of models in the specified format, starting row numbers from 0.
+    Generate a list of models grouped by categories, with category names as headers.
 
     Args:
         json_file (str): Path to the models.json file.
 
     Returns:
-        list: A list of models in the specified format.
+        list: A list of models grouped by categories with headers.
     """
     with open(json_file, "r", encoding="utf-8") as f:
         models = json.load(f)
 
+    # Group models by category
+    categories = {}
+    for key, model in models.items():
+        category = model.get("category", "Uncategorized")
+        if category not in categories:
+            categories[category] = []
+        categories[category].append((key, model))
+
     model_list = []
-    row_number = -1  # Start from -1 so the first increment makes it 0
+    row_number = 0
 
-    for index, (key, model) in enumerate(models.items()):
-        if index % 2 == 0:
-            row_number += 1  # Increment row number for every 3 objects
+    # Define category order
+    category_order = ["voice_actor", "character", "actor", "celebritie", "singer"]
 
-        model_list.append([model["name"], "callback", f"voice_{key}", row_number])
+    # Add models by category with headers in specified order
+    for category in category_order:
+        if category not in categories:
+            continue
+
+        category_models = categories[category]
+
+        # Add category header as a regular button instead of header type
+        model_list.append(
+            [
+                msgs.category_header.format(
+                    category=msgs.categories_lable[category], count=len(category_models)
+                ),
+                "callback",
+                f"cat_{category}",
+                row_number,
+            ]
+        )
+        row_number += 1
+
+        # Add models in this category
+        for i, (key, model) in enumerate(category_models):
+            if i % 2 == 0 and i > 0:
+                row_number += 1
+            model_list.append([model["name"], "callback", f"voice_{key}", row_number])
+
+        row_number += 1  # Add extra row between categories
 
     return model_list
 
