@@ -179,7 +179,7 @@ async def invite_command(client, message):
     )
 
 
-@bot.on_message(filters.command("buy_credits"))
+@bot.on_message(filters.command("credits"))
 async def buy_credits_command(client, message):
     chat_id = message.from_user.id
 
@@ -190,7 +190,7 @@ async def buy_credits_command(client, message):
 
     credits = user_data["credits"]
 
-    await message.reply(msgs.buy_credits.format(credits=credits))
+    await message.reply(msgs.credits_message.format(credits=credits))
 
 
 def create_reply_markup(button_list):
