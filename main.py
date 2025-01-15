@@ -121,6 +121,41 @@ async def callbacks(client, callback_query):
         buttons = create_reply_markup(msgs.pitch_btns)
         await message.reply(msgs.pitch_select, reply_markup=buttons)
 
+    elif data == "invite":
+        # Get user's current refs count
+        user_data = get_users_columns(chat_id, ["refs", "credits"])
+        if user_data is None:
+            return
+
+        refs = user_data["refs"]
+        credits = user_data["credits"]
+
+        # Create unique invite link
+        bot_info = await client.get_me()
+        invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
+
+        await message.reply(f"{msgs.banner_msg}\n\n{invite_link}")
+
+        await message.reply(
+            msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits)
+        )
+
+    elif data == "credits":
+        # Get user's current credits
+        user_data = get_users_columns(chat_id, "credits")
+        if user_data is None:
+            return
+
+        credits = user_data["credits"]
+
+        await message.reply(msgs.credits_message.format(credits=credits))
+
+    elif data == "help":
+        await message.reply(msgs.help_msg)
+
+    elif data == "convert_voice":
+        await message.reply(msgs.convert_msg)
+
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):
         # check if user has enough credits
@@ -201,21 +236,8 @@ async def buy_credits_command(client, message):
 
 @bot.on_message(filters.command("menu"))
 async def menu_command(client, message):
-    msg = (
-        "<b>bold</b>, "
-        "<i>italic</i>, "
-        "<u>underline</u>, "
-        "<s>strike</s>, "
-        "<spoiler>spoiler</spoiler>, "
-        '<a href="https://pyrogram.org/">URL</a>, '
-        "<code>code</code>, "
-        "<emoji id='5411225014148014586'>🔴</emoji>\n"
-        '<pre language="python">\n'
-        "for i in range(10):\n"
-        "    print(i)\n"
-        "</pre>"
-    )
-    await message.reply(msg, parse_mode=enums.ParseMode.HTML)
+    buttons = create_reply_markup(msgs.menu_btns)
+    await message.reply(msgs.menu_msg, reply_markup=buttons)
 
 
 def create_reply_markup(button_list):
