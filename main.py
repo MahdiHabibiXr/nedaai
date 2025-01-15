@@ -139,6 +139,7 @@ async def callbacks(client, callback_query):
         model_data = get_value_from_json("models.json", model_name)
         model_title = model_data["name"]
         model_url = model_data["url"]
+        model_0_pitch = model_data["pitch"]
         audio = get_users_columns(chat_id, "audio")["audio"]
         rvc_model = model_data["type"]
 
@@ -147,7 +148,7 @@ async def callbacks(client, callback_query):
             audio,
             model_url,
             chat_id,
-            pitch=pitch,
+            pitch=pitch + model_0_pitch,
             voice_name=model_title,
             rvc_model=rvc_model,
         )
