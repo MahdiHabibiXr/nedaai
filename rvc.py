@@ -13,7 +13,7 @@ def create_rvc_conversion(
         "rms_mix_rate": 0.3,
         "filter_radius": 3,
         "custom_rvc_model_download_url": model_url,
-        "output_format": "mp3",
+        "output_format": "wav",
     }
 
     callback_url = (
