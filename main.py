@@ -168,7 +168,8 @@ async def callbacks(client, callback_query):
             return
 
         # update user credits
-        update_user_column(chat_id, "credits", credits - duration)
+        new_credits = credits - duration
+        update_user_column(chat_id, "credits", new_credits)
 
         # get pitch
         pitch = int(data.replace("pitch_", ""))
@@ -194,7 +195,7 @@ async def callbacks(client, callback_query):
             rvc_model=rvc_model,
         )
 
-        await message.reply(msgs.proccessing)
+        await message.reply(msgs.proccessing.format(credits=new_credits))
 
 
 @bot.on_message(filters.command("invite"))
@@ -238,6 +239,11 @@ async def buy_credits_command(client, message):
 async def menu_command(client, message):
     buttons = create_reply_markup(msgs.menu_btns)
     await message.reply(msgs.menu_msg, reply_markup=buttons)
+
+
+@bot.on_message(filters.text)
+async def unknown_command(client, message):
+    await message.reply("دستور ناشناخته")
 
 
 def create_reply_markup(button_list):
