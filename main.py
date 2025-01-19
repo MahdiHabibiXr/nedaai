@@ -38,6 +38,18 @@ async def is_joined(app, user_id):
     return not_joined
 
 
+@bot.on_message(filters.user())
+async def amdin(client, message):
+    chat_id = message.chat.id
+    text = message.text
+
+    if ("/get_credits_") in text:
+        user_id = text.replace("/get_credits_", "")
+        user_data = get_users_columns(user_id, "credits")
+        credits = user_data["credits"]
+        await message.reply(credits)
+
+
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
 async def start_text(client, message):
     not_joined_channels = await is_joined(bot, message.from_user.id)
