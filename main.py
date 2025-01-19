@@ -206,7 +206,7 @@ async def callbacks(client, callback_query):
             voice_name=model_title,
             rvc_model=rvc_model,
         )
-
+        await message.reply(msgs.proccessing_emojie)
         await message.reply(msgs.proccessing.format(credits=new_credits))
 
 
