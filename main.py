@@ -12,7 +12,13 @@ from pyrogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
 )
-from db import create_user, user_exists, update_user_column, get_users_columns
+from db import (
+    create_user,
+    user_exists,
+    update_user_column,
+    get_users_columns,
+    create_users_table,
+)
 
 from uploader import upload_file
 import rvc
@@ -38,7 +44,7 @@ async def is_joined(app, user_id):
     return not_joined
 
 
-@bot.on_message(filters.user())
+@bot.on_message(filters.user(msgs.admin_id))
 async def amdin(client, message):
     chat_id = message.chat.id
     text = message.text
@@ -48,6 +54,23 @@ async def amdin(client, message):
         user_data = get_users_columns(user_id, "credits")
         credits = user_data["credits"]
         await message.reply(credits)
+
+    elif ("/config") in text:
+        if not os.path.exists("voice_cloner.db"):
+            create_users_table()
+        # Create sessions directory if it doesn't exist
+        if not os.path.exists("sessions"):
+            os.makedirs("sessions")
+        await message.reply("Database created successfully")
+
+    elif ("/models") in text:
+        # Get the content after /models command
+        json_content = text.replace("/models", "").strip()
+
+        # Write the raw text content to models.json
+        with open("models.json", "w", encoding="utf-8") as f:
+            f.write(json_content)
+        await message.reply("Models updated successfully")
 
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
