@@ -11,4 +11,4 @@ FROM py-base AS py-pod
 
 COPY . .
 
-CMD [ "python","main.py" ]
+CMD python config.py && python main.py
