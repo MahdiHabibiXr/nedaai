@@ -11,4 +11,6 @@ FROM py-base AS py-pod
 
 COPY . .
 
+RUN mkdir -p /app/sessions
+
 CMD ["python", "main.py"]
