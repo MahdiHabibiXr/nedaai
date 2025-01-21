@@ -522,4 +522,7 @@ def joined_channels_button(not_joined_channels):
     return buttons
 
 
+if not os.path.exists("sessions"):
+    os.makedirs("sessions")
+
 bot.run()
