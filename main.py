@@ -42,6 +42,7 @@ async def is_joined(app, user_id):
 async def amdin(client, message):
     chat_id = message.chat.id
     text = message.text
+    username = message.from_user.mention
 
     if ("/get_credits_") in text:
         user_id = text.replace("/get_credits_", "")
@@ -54,6 +55,7 @@ async def amdin(client, message):
 async def start_text(client, message):
     not_joined_channels = await is_joined(bot, message.from_user.id)
     chat_id = message.chat.id
+    user_mention = message.from_user.mention
     username = message.from_user.username
 
     #check if user exists
@@ -65,6 +67,9 @@ async def start_text(client, message):
         if len(message.text.split(" ")) == 2:
             invited_by = message.text.split(" ")[1]
             update_user_column(invited_by, "refs", 1, True)
+
+            await client.send_message(invited_by, msgs.invite_successfully.format(user=username, gift_credits=msgs.invitation_gift,admin = msgs.admin_username ))
+            
             update_user_column(invited_by, "credits", msgs.invitation_gift, True)
 
     # Check if user has joined required channels
@@ -74,7 +79,7 @@ async def start_text(client, message):
         await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
     else:
-        await message.reply(msgs.start)
+        await message.reply(msgs.start.format(username=username))
 
 
 
@@ -111,7 +116,7 @@ async def callbacks(client, callback_query):
     data = callback_query.data
     chat_id = callback_query.from_user.id
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
-    
+    username = callback_query.from_user.mention
     if data.startswith("cat_"):
         await callback_query.answer(msgs.select_category)
         return
@@ -176,7 +181,7 @@ async def callbacks(client, callback_query):
             await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
         else:
-            await message.reply(msgs.start)
+            await message.reply(msgs.start.format(username=username))
     
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):

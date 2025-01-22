@@ -6,3 +6,4 @@ files
 .env
 *.json
 gender-detection.py
+voice_cloner.db
