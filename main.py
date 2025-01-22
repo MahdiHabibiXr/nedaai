@@ -12,7 +12,13 @@ from pyrogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
 )
-from db import create_user, user_exists, update_user_column, get_users_columns
+from db import (
+    create_user,
+    user_exists,
+    update_user_column,
+    get_users_columns,
+    create_users_table,
+)
 
 from uploader import upload_file
 import rvc
@@ -38,7 +44,7 @@ async def is_joined(app, user_id):
     return not_joined
 
 
-@bot.on_message(filters.user())
+@bot.on_message(filters.user(msgs.admin_id))
 async def amdin(client, message):
     chat_id = message.chat.id
     text = message.text
@@ -50,6 +56,23 @@ async def amdin(client, message):
         credits = user_data["credits"]
         await message.reply(credits)
 
+    elif ("/config") in text:
+        if not os.path.exists("voice_cloner.db"):
+            create_users_table()
+        # Create sessions directory if it doesn't exist
+        if not os.path.exists("sessions"):
+            os.makedirs("sessions")
+        await message.reply("Database created successfully")
+
+    elif ("/models") in text:
+        # Get the content after /models command
+        json_content = text.replace("/models", "").strip()
+
+        # Write the raw text content to models.json
+        with open("models.json", "w", encoding="utf-8") as f:
+            f.write(json_content)
+        await message.reply("Models updated successfully")
+
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
 async def start_text(client, message):
@@ -58,7 +81,7 @@ async def start_text(client, message):
     user_mention = message.from_user.mention
     username = message.from_user.username
 
-    #check if user exists
+    # check if user exists
     if not user_exists(chat_id):
         create_user(chat_id, username)
         await message.reply(msgs.gift_msg.format(inital_credits=msgs.initial_gift))
@@ -80,7 +103,6 @@ async def start_text(client, message):
 
     else:
         await message.reply(msgs.start.format(username=username))
-
 
 
 @bot.on_message(filters.private & (filters.voice | filters.audio))
@@ -116,7 +138,11 @@ async def callbacks(client, callback_query):
     data = callback_query.data
     chat_id = callback_query.from_user.id
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
+<<<<<<< HEAD
     username = callback_query.from_user.mention
+=======
+
+>>>>>>> 27e8816b75525dae36cf74263e5c441a8abd5444
     if data.startswith("cat_"):
         await callback_query.answer(msgs.select_category)
         return
@@ -147,7 +173,10 @@ async def callbacks(client, callback_query):
         await message.reply(f"{msgs.banner_msg}\n\n{invite_link}")
 
         await message.reply(
-            msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits), reply_markup=return_to_menu
+            msgs.invite_help.format(
+                refs=refs, invite_link=invite_link, credits=credits
+            ),
+            reply_markup=return_to_menu,
         )
 
     elif data == "credits":
@@ -158,11 +187,16 @@ async def callbacks(client, callback_query):
 
         credits = user_data["credits"]
 
-        await message.reply(msgs.credits_message.format(credits=credits, amdin=msgs.admin_username), reply_markup=return_to_menu)
+        await message.reply(
+            msgs.credits_message.format(credits=credits, amdin=msgs.admin_username),
+            reply_markup=return_to_menu,
+        )
 
     elif data == "help":
-        
-        await message.reply(msgs.help_msg.format(admin_username=msgs.admin_username), reply_markup=return_to_menu)
+        await message.reply(
+            msgs.help_msg.format(admin_username=msgs.admin_username),
+            reply_markup=return_to_menu,
+        )
 
     elif data == "convert_voice":
         await message.reply(msgs.convert_msg, reply_markup=return_to_menu)
@@ -177,12 +211,19 @@ async def callbacks(client, callback_query):
         # Check if user has joined required channels
         if not_joined_channels:
             buttons = joined_channels_button(not_joined_channels)
-            reply_markup = InlineKeyboardMarkup(joined_channels_button(not_joined_channels))
+            reply_markup = InlineKeyboardMarkup(
+                joined_channels_button(not_joined_channels)
+            )
             await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
         else:
+<<<<<<< HEAD
             await message.reply(msgs.start.format(username=username))
     
+=======
+            await message.reply(msgs.start)
+
+>>>>>>> 27e8816b75525dae36cf74263e5c441a8abd5444
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):
         # check if user has enough credits
@@ -245,7 +286,8 @@ async def invite_command(client, message):
 
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
     await message.reply(
-        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits), reply_markup=return_to_menu
+        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits),
+        reply_markup=return_to_menu,
     )
 
 
@@ -260,7 +302,11 @@ async def credits_command(client, message):
 
     credits = user_data["credits"]
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
-    await message.reply(msgs.credits_message.format(credits=credits, amdin=msgs.admin_username), reply_markup=return_to_menu)
+    await message.reply(
+        msgs.credits_message.format(credits=credits, amdin=msgs.admin_username),
+        reply_markup=return_to_menu,
+    )
+
 
 @bot.on_message(filters.command("buy_credits"))
 async def buy_credits_command(client, message):
@@ -273,7 +319,10 @@ async def buy_credits_command(client, message):
 
     credits = user_data["credits"]
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
-    await message.reply(msgs.buy_credits_message.format(credits=credits, amdin=msgs.admin_username), reply_markup=return_to_menu)
+    await message.reply(
+        msgs.buy_credits_message.format(credits=credits, amdin=msgs.admin_username),
+        reply_markup=return_to_menu,
+    )
 
 
 @bot.on_message(filters.command("menu"))
@@ -281,11 +330,13 @@ async def menu_command(client, message):
     buttons = create_reply_markup(msgs.menu_btns)
     await message.reply(msgs.menu_msg, reply_markup=buttons)
 
+
 @bot.on_message(filters.command("help"))
 async def help_command(client, message):
     buttons = create_reply_markup([msgs.return_to_menu_button])
-    await message.reply(msgs.help_msg.format(admin_username=msgs.admin_username), reply_markup=buttons)
-
+    await message.reply(
+        msgs.help_msg.format(admin_username=msgs.admin_username), reply_markup=buttons
+    )
 
 
 @bot.on_message(filters.text)
@@ -463,13 +514,26 @@ def get_value_from_json(file_path, key):
         print("Error: Failed to decode JSON.")
         return None
 
+
 def joined_channels_button(not_joined_channels):
     buttons = []
     for channel in not_joined_channels:
         buttons.append(
-            [InlineKeyboardButton(text=f"{channel}", url=f"https://t.me/{channel.replace('@', '')}")]
+            [
+                InlineKeyboardButton(
+                    text=f"{channel}", url=f"https://t.me/{channel.replace('@', '')}"
+                )
+            ]
         )
-    buttons.append([InlineKeyboardButton(text=msgs.joined_channels_btn[0], callback_data=msgs.joined_channels_btn[2])])
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text=msgs.joined_channels_btn[0],
+                callback_data=msgs.joined_channels_btn[2],
+            )
+        ]
+    )
     return buttons
+
 
 bot.run()

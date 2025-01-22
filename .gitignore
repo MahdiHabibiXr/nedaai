@@ -5,5 +5,8 @@ models
 files
 .env
 *.json
+<<<<<<< HEAD
 gender-detection.py
+=======
+>>>>>>> 27e8816b75525dae36cf74263e5c441a8abd5444
 voice_cloner.db
