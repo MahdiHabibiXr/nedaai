@@ -1,7 +1,7 @@
 services:
   bot:
-    build: .
+    build: ./app
     env_file:
       - .env
     volumes:
-      - .:/app
+      - ./app:/app
