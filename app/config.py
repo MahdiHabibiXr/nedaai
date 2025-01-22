@@ -1,4 +1,5 @@
 import os
+
 from db import create_users_table
 
 # Create sessions directory if it doesn't exist

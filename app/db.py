@@ -1,4 +1,5 @@
 import sqlite3
+
 import msgs
 
 DB_NAME = "voice_cloner.db"
@@ -12,7 +13,8 @@ def create_users_table():
     cursor = conn.cursor()
 
     # Create the 'users' table
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Auto-incremented primary key
         chat_id INTEGER,                -- Telegram's unique user ID
@@ -24,7 +26,8 @@ def create_users_table():
         duration INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- User creation timestamp
     );
-    """)
+    """
+    )
 
     # Commit the changes and close the connection
     conn.commit()
