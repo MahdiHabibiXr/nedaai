@@ -1,28 +1,29 @@
-import msgs
-from dotenv import load_dotenv
+import json
+import logging
 import os
 
-load_dotenv(".env")
+import dotenv
 
-from pyrogram import Client, filters, enums
+dotenv.load_dotenv(".env")
+
+from pyrogram import Client, enums, filters
 from pyrogram.types import (
-    InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ForceReply,
-    ReplyKeyboardMarkup,
+    InlineKeyboardMarkup,
     KeyboardButton,
+    ReplyKeyboardMarkup,
 )
+
+import msgs
+import rvc
 from db import (
     create_user,
-    user_exists,
-    update_user_column,
-    get_users_columns,
     create_users_table,
+    get_users_columns,
+    update_user_column,
+    user_exists,
 )
-
 from uploader import upload_file
-import rvc
-import json
 
 links = ["@aiticle", "@nedaaiofficial"]
 
@@ -46,9 +47,9 @@ async def is_joined(app, user_id):
 
 @bot.on_message(filters.user(msgs.admin_id))
 async def amdin(client, message):
-    chat_id = message.chat.id
+    message.chat.id
     text = message.text
-    username = message.from_user.mention
+    message.from_user.mention
 
     if ("/get_credits_") in text:
         user_id = text.replace("/get_credits_", "")
@@ -76,9 +77,10 @@ async def amdin(client, message):
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
 async def start_text(client, message):
+    logging.info(f"start_text")
     not_joined_channels = await is_joined(bot, message.from_user.id)
     chat_id = message.chat.id
-    user_mention = message.from_user.mention
+    message.from_user.mention
     username = message.from_user.username
 
     # check if user exists
@@ -91,8 +93,15 @@ async def start_text(client, message):
             invited_by = message.text.split(" ")[1]
             update_user_column(invited_by, "refs", 1, True)
 
-            await client.send_message(invited_by, msgs.invite_successfully.format(user=username, gift_credits=msgs.invitation_gift,admin = msgs.admin_username ))
-            
+            await client.send_message(
+                invited_by,
+                msgs.invite_successfully.format(
+                    user=username,
+                    gift_credits=msgs.invitation_gift,
+                    admin=msgs.admin_username,
+                ),
+            )
+
             update_user_column(invited_by, "credits", msgs.invitation_gift, True)
 
     # Check if user has joined required channels
@@ -214,7 +223,7 @@ async def callbacks(client, callback_query):
 
         else:
             await message.reply(msgs.start.format(username=username))
-    
+
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):
         # check if user has enough credits
@@ -320,6 +329,11 @@ async def buy_credits_command(client, message):
 async def menu_command(client, message):
     buttons = create_reply_markup(msgs.menu_btns)
     await message.reply(msgs.menu_msg, reply_markup=buttons)
+
+
+@bot.on_message(filters.command("123"))
+async def help123_command(client, message):
+    logging.info(f"123")
 
 
 @bot.on_message(filters.command("help"))
@@ -527,4 +541,9 @@ def joined_channels_button(not_joined_channels):
     return buttons
 
 
+logging.basicConfig(level=logging.INFO)
+logging.info("bot started")
+
 bot.run()
+
+logging.info("bot stopped")
