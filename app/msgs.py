@@ -70,7 +70,7 @@ buy_credits_message = (
     # "⬅️ بازگشت به منوی اصلی : /menu"
 )
 invitation_gift = 100
-initial_gift = 200
+initial_gift = 120
 credits_message = (
     "🔸 اعتبار باقیمانده شما: **{credits} ثانیه**\n\n"
     "📱 برای خرید با پشتیبانی در ارتباط باشید:\n{amdin}\n\n"
