@@ -45,6 +45,15 @@ async def is_joined(app, user_id):
     return not_joined
 
 
+@bot.on_message(filters.user(msgs.admin_id) & filters.document)
+async def handle_file(client, message):
+    chat_id = message.chat.id
+
+    file = await message.download()
+    await message.reply("Json saved successfully")
+
+
+
 @bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
 async def amdin(client, message):
     message.chat.id
@@ -541,9 +550,4 @@ def joined_channels_button(not_joined_channels):
     return buttons
 
 
-logging.basicConfig(level=logging.INFO)
-logging.info("bot started")
-
 bot.run()
-
-logging.info("bot stopped")
