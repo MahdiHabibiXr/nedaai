@@ -49,7 +49,8 @@ async def is_joined(app, user_id):
 async def handle_file(client, message):
     chat_id = message.chat.id
 
-    file = await message.download()
+    file = await message.download('./models.json')
+    await message.reply(file)
     await message.reply("Json saved successfully")
 
 
