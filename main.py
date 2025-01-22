@@ -44,13 +44,13 @@ async def is_joined(app, user_id):
     return not_joined
 
 
-@bot.on_message(filters.user(msgs.admin_id))
+@bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
 async def amdin(client, message):
     chat_id = message.chat.id
     text = message.text
     username = message.from_user.mention
 
-    if ("/get_credits_") in text:
+    if ("/admin_get_credits_") in text:
         user_id = text.replace("/get_credits_", "")
         user_data = get_users_columns(user_id, "credits")
         credits = user_data["credits"]
@@ -138,11 +138,7 @@ async def callbacks(client, callback_query):
     data = callback_query.data
     chat_id = callback_query.from_user.id
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
-<<<<<<< HEAD
     username = callback_query.from_user.mention
-=======
-
->>>>>>> 27e8816b75525dae36cf74263e5c441a8abd5444
     if data.startswith("cat_"):
         await callback_query.answer(msgs.select_category)
         return
@@ -217,13 +213,8 @@ async def callbacks(client, callback_query):
             await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
         else:
-<<<<<<< HEAD
             await message.reply(msgs.start.format(username=username))
     
-=======
-            await message.reply(msgs.start)
-
->>>>>>> 27e8816b75525dae36cf74263e5c441a8abd5444
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):
         # check if user has enough credits
