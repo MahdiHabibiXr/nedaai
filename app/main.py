@@ -25,7 +25,7 @@ from db import (
 )
 from uploader import upload_file
 
-links = ["@aiticle", "@nedaaiofficial"]
+links = msgs.channels_list
 
 bot = Client(
     "sessions/nedaai",
