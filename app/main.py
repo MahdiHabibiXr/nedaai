@@ -22,6 +22,7 @@ from db import (
     get_users_columns,
     update_user_column,
     user_exists,
+    DB_NAME,
 )
 from uploader import upload_file
 
@@ -48,11 +49,15 @@ async def is_joined(app, user_id):
 @bot.on_message(filters.user(msgs.admin_id) & filters.document)
 async def handle_file(client, message):
     chat_id = message.chat.id
-
-    file = await message.download('./models.json')
-    await message.reply(file)
-    await message.reply("Json saved successfully")
-
+    logging.basicConfig(level=logging.INFO)
+    try:
+        file = await message.download("./models.json")
+        await message.reply(file)
+        await message.reply("Json saved successfully")
+        logging.basicConfig(level=logging.INFO)
+    except Exception as e:
+        logging.basicConfig(level=logging.INFO)
+        await message.reply(f"Error saving json file: {str(e)}")
 
 
 @bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
@@ -83,6 +88,9 @@ async def amdin(client, message):
         with open("models.json", "w", encoding="utf-8") as f:
             f.write(json_content)
         await message.reply("Models updated successfully")
+
+    elif ("/get_db") in text:
+        await client.send_document(message.chat.id, DB_NAME)
 
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
@@ -233,7 +241,7 @@ async def callbacks(client, callback_query):
 
         else:
             await message.reply(msgs.start.format(username=username))
-    
+
     # TODO : Add any generation to generations table
     elif data.startswith("pitch_"):
         # check if user has enough credits
