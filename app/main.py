@@ -544,6 +544,7 @@ def joined_channels_button(not_joined_channels):
 logging.basicConfig(level=logging.INFO)
 logging.info("bot started")
 
-bot.run()
+if __name__ == "__main__":
+    bot.run()
 
 logging.info("bot stopped")

@@ -2,12 +2,12 @@ import sqlite3
 
 import msgs
 
-DB_NAME = "voice_cloner.db"
+DB_NAME = "./sessions/voice_cloner.db"
 
 
 def create_users_table():
     # Connect to SQLite database (or create it if it doesn't exist)
-    conn = sqlite3.connect("voice_cloner.db")
+    conn = sqlite3.connect(DB_NAME)
 
     # Create a cursor object
     cursor = conn.cursor()
@@ -97,7 +97,7 @@ def get_users_columns(chat_id, columns):
     Returns:
         dict or None: A dictionary of column-value pairs if the user exists, otherwise None.
     """
-    conn = sqlite3.connect("voice_cloner.db")
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     # Ensure columns is a list to handle both single and multiple columns
