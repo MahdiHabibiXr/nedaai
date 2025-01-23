@@ -1,5 +1,7 @@
 import replicate
 
+base_url = "https://n8n.inbeet.tech/webhook/replicate"
+
 
 def create_rvc_conversion(
     audio, model_url, t_id, pitch=0, voice_name=None, rvc_model="CUSTOM"
@@ -16,9 +18,7 @@ def create_rvc_conversion(
         "output_format": "wav",
     }
 
-    callback_url = (
-        f"https://n8n.inbeet.tech/webhook/replicate?t_id={t_id}&voice={voice_name}"
-    )
+    callback_url = f"{base_url}?t_id={t_id}&voice={voice_name}"
 
     replicate.predictions.create(
         version="d18e2e0a6a6d3af183cc09622cebba8555ec9a9e66983261fc64c8b1572b7dce",

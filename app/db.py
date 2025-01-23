@@ -2,7 +2,7 @@ import sqlite3
 
 import msgs
 
-DB_NAME = "sessions/nedaa.db"
+DB_NAME = "sessions/nedaai.db"
 
 
 def create_users_table():

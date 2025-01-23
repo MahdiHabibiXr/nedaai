@@ -14,4 +14,4 @@ FROM py-base AS py-pod
 USER user
 COPY --chown=user:user . .
 
-CMD ["python", "main.py"]
+CMD ["sh", "-c", "python config.py && python main.py"]
