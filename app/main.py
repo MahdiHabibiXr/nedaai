@@ -95,7 +95,6 @@ async def amdin(client, message):
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
 async def start_text(client, message):
-    logging.info(f"start_text")
     not_joined_channels = await is_joined(bot, message.from_user.id)
     chat_id = message.chat.id
     message.from_user.mention
@@ -137,26 +136,31 @@ async def get_voice_or_audio(client, message):
     t_id = message.chat.id
     media = message.voice or message.audio
     duration = media.duration
+    try:
+        if media and not message.from_user.is_bot:
+            # save file
+            file_id = media.file_id
+            file = await client.download_media(
+                file_id, file_name=f"files/{t_id}/voice.ogg"
+            )
 
-    if media and not message.from_user.is_bot:
-        # save file
-        file_id = media.file_id
-        file = await client.download_media(file_id, file_name=f"files/{t_id}/voice.ogg")
+            # upload file to pixiee
+            file_url = upload_file(file, f"{file_id}.ogg")
 
-        # upload file to pixiee
-        file_url = upload_file(file, f"{file_id}.ogg")
+            # add the audio to database
+            update_user_column(t_id, "audio", file_url)
 
-        # add the audio to database
-        update_user_column(t_id, "audio", file_url)
+            # add the audio duration to database
+            update_user_column(t_id, "duration", duration)
 
-        # add the audio duration to database
-        update_user_column(t_id, "duration", duration)
-
-        # generate the available models as buttons from models.json
-        buttons = create_reply_markup(generate_model_list("models.json"))
-        await message.reply(
-            msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
-        )
+            # generate the available models as buttons from models.json
+            buttons = create_reply_markup(generate_model_list("models.json"))
+            await message.reply(
+                msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
+            )
+    except Exception as e:
+        logging.basicConfig(level=logging.INFO)
+        await client.send_message(msgs.admin_id, f"Error: {str(e)}")
 
 
 @bot.on_callback_query()
