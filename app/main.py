@@ -27,6 +27,7 @@ from db import (
 from uploader import upload_file
 
 links = msgs.channels_list
+MODELS_DIR = "sessions/models.json"
 
 bot = Client(
     "sessions/nedaai",
@@ -51,7 +52,7 @@ async def handle_file(client, message):
     chat_id = message.chat.id
     logging.basicConfig(level=logging.INFO)
     try:
-        file = await message.download("./sessions/models.json")
+        file = await message.download(f"./{MODELS_DIR}")
         await message.reply(file)
         await message.reply("Json saved successfully")
         logging.basicConfig(level=logging.INFO)
@@ -85,7 +86,7 @@ async def amdin(client, message):
         json_content = text.replace("/models", "").strip()
 
         # Write the raw text content to models.json
-        with open("sessions/models.json", "w", encoding="utf-8") as f:
+        with open(MODELS_DIR, "w", encoding="utf-8") as f:
             f.write(json_content)
         await message.reply("Models updated successfully")
 
@@ -154,7 +155,7 @@ async def get_voice_or_audio(client, message):
             update_user_column(t_id, "duration", duration)
 
             # generate the available models as buttons from models.json
-            buttons = create_reply_markup(generate_model_list("sessions/models.json"))
+            buttons = create_reply_markup(generate_model_list(MODELS_DIR))
             await message.reply(
                 msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
             )
@@ -268,7 +269,7 @@ async def callbacks(client, callback_query):
         model_name = get_users_columns(chat_id, "model_name")["model_name"]
 
         # get model data from models.json
-        model_data = get_value_from_json("sessions/models.json", model_name)
+        model_data = get_value_from_json(MODELS_DIR, model_name)
         model_title = model_data["name"]
         model_url = model_data["url"]
         model_0_pitch = model_data["pitch"]
