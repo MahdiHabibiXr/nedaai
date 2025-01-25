@@ -26,7 +26,7 @@ from db import (
 )
 from uploader import upload_file
 
-links = msgs.channels_list
+links =  msgs.channels_list
 MODELS_DIR = "sessions/models.json"
 
 bot = Client(
