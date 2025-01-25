@@ -23,6 +23,8 @@ from db import (
     update_user_column,
     user_exists,
     DB_NAME,
+    create_generations_table,
+    add_generation
 )
 from uploader import upload_file
 
@@ -36,6 +38,9 @@ bot = Client(
     bot_token=os.getenv("TOKEN"),
 )
 
+#initialize the tables
+create_users_table()
+create_generations_table()
 
 async def is_joined(app, user_id):
     not_joined = []
@@ -60,6 +65,22 @@ async def handle_file(client, message):
         logging.basicConfig(level=logging.INFO)
         await message.reply(f"Error saving json file: {str(e)}")
 
+@bot.on_message(filters.user(msgs.admin_id) & (filters.reply))
+async def handle_reply(client, message):
+    chat_id = message.chat.id
+    reply = message.reply_to_message
+
+    if reply.voice or reply.audio:
+        await message.reply(reply.voice.file_id or reply.audio.file_id)
+    elif reply.text:
+        await message.reply(reply.text)
+    elif reply.document:
+        await message.reply(reply.document.file_)
+    elif reply.photo:
+        await message.reply(reply.photo.file_id)
+    elif reply.video:
+        await message.reply(reply.video.file_)
+                    
 
 @bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
 async def amdin(client, message):
@@ -81,17 +102,15 @@ async def amdin(client, message):
             os.makedirs("sessions")
         await message.reply("Database created successfully")
 
-    elif ("/models") in text:
-        # Get the content after /models command
-        json_content = text.replace("/models", "").strip()
-
-        # Write the raw text content to models.json
-        with open(MODELS_DIR, "w", encoding="utf-8") as f:
-            f.write(json_content)
-        await message.reply("Models updated successfully")
-
     elif ("/get_db") in text:
         await client.send_document(message.chat.id, DB_NAME)
+
+    elif ("set_banner_image") in text:
+        banner_img_id = text.replace("/admin/set_banner_image", "")
+        msgs.banner_img_id = banner_img_id
+
+        await message.reply(msgs.banner_img_id)
+        # await client.send_photo(msgs.admin_id, int(banner_img_id))
 
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
@@ -197,12 +216,12 @@ async def callbacks(client, callback_query):
         # Create unique invite link
         bot_info = await client.get_me()
         invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
+        caption = f"{msgs.banner_msg}\n\n{invite_link}"
 
-        await message.reply(f"{msgs.banner_msg}\n\n{invite_link}")
-
+        await client.send_photo(chat_id, msgs.banner_img_id, caption=caption)
         await message.reply(
             msgs.invite_help.format(
-                refs=refs, invite_link=invite_link, credits=credits
+                refs=refs, invite_link=invite_link, credits=credits, invitation_gift=msgs.invitation_gift
             ),
             reply_markup=return_to_menu,
         )
@@ -247,7 +266,7 @@ async def callbacks(client, callback_query):
         else:
             await message.reply(msgs.start.format(username=username))
 
-    # TODO : Add any generation to generations table
+    
     elif data.startswith("pitch_"):
         # check if user has enough credits
         user = get_users_columns(chat_id, ["duration", "credits"])
@@ -277,7 +296,7 @@ async def callbacks(client, callback_query):
         rvc_model = model_data["type"]
 
         # create rvc conversion to replicate
-        rvc.create_rvc_conversion(
+        prediciton = rvc.create_rvc_conversion(
             audio,
             model_url,
             chat_id,
@@ -285,6 +304,10 @@ async def callbacks(client, callback_query):
             voice_name=model_title,
             rvc_model=rvc_model,
         )
+
+        #add to generations table
+        add_generation(chat_id, audio, model_name, duration, prediciton)
+
         await message.reply(msgs.proccessing_emojie)
         await message.reply(msgs.proccessing.format(credits=new_credits))
 
@@ -309,7 +332,7 @@ async def invite_command(client, message):
 
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
     await message.reply(
-        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits),
+        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits,invitation_gift=msgs.invitation_gift),
         reply_markup=return_to_menu,
     )
 

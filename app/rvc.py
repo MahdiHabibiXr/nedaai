@@ -1,4 +1,7 @@
 import replicate
+from dotenv import load_dotenv
+
+load_dotenv('.env')
 
 base_url = "https://n8n.inbeet.tech/webhook/replicate"
 
@@ -20,9 +23,11 @@ def create_rvc_conversion(
 
     callback_url = f"{base_url}?t_id={t_id}&voice={voice_name}"
 
-    replicate.predictions.create(
+    rep = replicate.predictions.create(
         version="d18e2e0a6a6d3af183cc09622cebba8555ec9a9e66983261fc64c8b1572b7dce",
         input=input,
         webhook=callback_url,
         webhook_events_filter=["completed"],
     )
+
+    return rep.id

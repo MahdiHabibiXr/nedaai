@@ -1,6 +1,6 @@
 import os
 
-from db import create_users_table, DB_NAME
+from db import create_users_table, DB_NAME, create_generations_table
 
 path = "sessions"
 
@@ -17,3 +17,6 @@ if not os.path.exists(DB_NAME):
     print(f"Database {DB_NAME} created.")
 else:
     print(f"{DB_NAME} Database already exists.")
+
+#Create generations table if it doesn't exist
+create_generations_table()

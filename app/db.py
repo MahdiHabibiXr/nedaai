@@ -36,6 +36,49 @@ def create_users_table():
     print("Users table created successfully.")
 
 
+def create_generations_table():
+    # Connect to SQLite database (or create it if it doesn't exist)
+    conn = sqlite3.connect(DB_NAME)
+
+    # Create a cursor object
+    cursor = conn.cursor()
+
+    # Create the 'generations' table
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS generations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Auto-incremented primary key
+        chat_id INTEGER,                       -- Telegram's unique user ID
+        audio TEXT,                            -- Input text for generation
+        model_name TEXT,                            -- Model used for generation
+        duration INTEGER,                      -- Duration of the generated audio
+        replicate_id INTEGER,                 -- ID of the original generation
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Generation creation timestamp
+    );
+    """
+    )
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
+    print("Generations table created successfully.")
+
+
+def add_generation(chat_id, audio, model, duartion, replicate_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO generations (chat_id, audio, model_name, duration, replicate_id) 
+        VALUES (?, ?, ?, ?, ?)
+    """,
+        (chat_id, audio, model, duartion, replicate_id),
+    )
+    conn.commit()
+    conn.close()
+
+
 # Function to check if a user exists
 def user_exists(chat_id):
     conn = sqlite3.connect(DB_NAME)

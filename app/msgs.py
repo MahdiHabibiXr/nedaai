@@ -59,8 +59,7 @@ invite_help = (
     "🔸 تعداد دعوت‌های موفق شما: **{refs}**\n\n"
     "🔗 لینک دعوت شما:\n{invite_link}\n\n"
     "🔸 اعتبار  باقیمانده شما: **{credits} ثانیه**\n\n"
-    "✅ به ازای هر دعوت موفق، **۶۰ ثانیه** اعتبار رایگان دریافت می‌کنید.\n\n"
-    # "⬅️ بازگشت به منوی اصلی : /menu"
+    "✅ به ازای هر دعوت موفق، **{invitation_gift} ثانیه** اعتبار رایگان دریافت می‌کنید.\n\n"
 )
 
 buy_credits_message = (
@@ -130,4 +129,5 @@ invite_successfully = (
     "✨ کاربر {user} با لینک دعوت شما وارد ربات شد.\n\n"
     "🎁 {gift_credits} ثانیه اعتبار به شما تعلق گرفت.\n\n" 
 )
-channels_list = ["@aiticle", "@nedaaiofficial"]
+channels_list = ["@nedaaiofficial"]
+banner_img_id = "AgACAgQAAxkBAAIKUGeU8O23jaNsFI9C4FDI1lDHjkBNAAKnxzEbnfugUDtlu3g70pZDAAgBAAMCAAN5AAceBA"
