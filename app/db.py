@@ -21,6 +21,7 @@ def create_users_table():
         username TEXT,                         -- Optional Telegram username
         credits INTEGER DEFAULT 0,            -- Remaining free credits
         audio TEXT,                            -- Path or URL of the latest audio file
+        gender TEXT,
         refs INTEGER DEFAULT 0,               -- Number of invitations
         model_name TEXT,
         duration INTEGER,
@@ -166,3 +167,24 @@ def get_users_columns(chat_id, columns):
         return None
     finally:
         conn.close()
+
+
+def add_gender_column_to_users():
+    """
+    Add a 'gender' column to the 'users' table if it doesn't already exist.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Check if the 'gender' column already exists
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [column[1] for column in cursor.fetchall()]
+    if "gender" not in columns:
+        # Add the 'gender' column
+        cursor.execute("ALTER TABLE users ADD COLUMN gender TEXT")
+        conn.commit()
+        print("Gender column added to users table.")
+    else:
+        print("Gender column already exists in users table.")
+
+    conn.close()

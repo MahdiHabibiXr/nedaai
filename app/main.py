@@ -24,11 +24,12 @@ from db import (
     user_exists,
     DB_NAME,
     create_generations_table,
-    add_generation
+    add_generation,
+    add_gender_column_to_users,
 )
 from uploader import upload_file
 
-links =  msgs.channels_list
+links = msgs.channels_list
 MODELS_DIR = "sessions/models.json"
 
 bot = Client(
@@ -38,9 +39,11 @@ bot = Client(
     bot_token=os.getenv("TOKEN"),
 )
 
-#initialize the tables
+# initialize the tables
 create_users_table()
 create_generations_table()
+add_gender_column_to_users()
+
 
 async def is_joined(app, user_id):
     not_joined = []
@@ -65,6 +68,7 @@ async def handle_file(client, message):
         logging.basicConfig(level=logging.INFO)
         await message.reply(f"Error saving json file: {str(e)}")
 
+
 @bot.on_message(filters.user(msgs.admin_id) & (filters.reply))
 async def handle_reply(client, message):
     chat_id = message.chat.id
@@ -80,7 +84,7 @@ async def handle_reply(client, message):
         await message.reply(reply.photo.file_id)
     elif reply.video:
         await message.reply(reply.video.file_)
-                    
+
 
 @bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
 async def amdin(client, message):
@@ -156,6 +160,7 @@ async def get_voice_or_audio(client, message):
     t_id = message.chat.id
     media = message.voice or message.audio
     duration = media.duration
+
     try:
         if media and not message.from_user.is_bot:
             # save file
@@ -165,7 +170,7 @@ async def get_voice_or_audio(client, message):
             )
 
             # upload file to pixiee
-            file_url = upload_file(file, f"{file_id}.ogg")
+            file_url = upload_file(file, f"nedaai/{t_id}/{file_id}.ogg")
 
             # add the audio to database
             update_user_column(t_id, "audio", file_url)
@@ -173,11 +178,10 @@ async def get_voice_or_audio(client, message):
             # add the audio duration to database
             update_user_column(t_id, "duration", duration)
 
-            # generate the available models as buttons from models.json
-            buttons = create_reply_markup(generate_model_list(MODELS_DIR))
-            await message.reply(
-                msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
-            )
+            # ask user the gender
+            buttons = create_reply_markup(msgs.gender_btns)
+            await message.reply(msgs.gender_select, reply_markup=buttons)
+
     except Exception as e:
         logging.basicConfig(level=logging.INFO)
         await client.send_message(msgs.admin_id, f"Error: {str(e)}")
@@ -185,131 +189,134 @@ async def get_voice_or_audio(client, message):
 
 @bot.on_callback_query()
 async def callbacks(client, callback_query):
-    message = callback_query.message
-    data = callback_query.data
-    chat_id = callback_query.from_user.id
-    return_to_menu = create_reply_markup([msgs.return_to_menu_button])
-    username = callback_query.from_user.mention
-    if data.startswith("cat_"):
-        await callback_query.answer(msgs.select_category)
-        return
+    try:
+        message = callback_query.message
+        data = callback_query.data
+        chat_id = callback_query.from_user.id
 
-    await message.delete()
+        return_to_menu = create_reply_markup([msgs.return_to_menu_button])
+        username = callback_query.from_user.mention
 
-    # seleted the voice models
-    if data.startswith("voice_"):
-        model_name = data.replace("voice_", "")
-        update_user_column(chat_id, "model_name", model_name)
-
-        buttons = create_reply_markup(msgs.pitch_btns)
-        await message.reply(msgs.pitch_select, reply_markup=buttons)
-
-    elif data == "invite":
-        # Get user's current refs count
-        user_data = get_users_columns(chat_id, ["refs", "credits"])
-        if user_data is None:
+        if data.startswith("cat_"):
+            await callback_query.answer(msgs.select_category)
             return
 
-        refs = user_data["refs"]
-        credits = user_data["credits"]
+        await message.delete()
 
-        # Create unique invite link
-        bot_info = await client.get_me()
-        invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
-        caption = f"{msgs.banner_msg}\n\n{invite_link}"
+        # selected the voice models
+        if data.startswith("voice_"):
+            model_name = data.replace("voice_", "")
+            update_user_column(chat_id, "model_name", model_name)
 
-        await client.send_photo(chat_id, msgs.banner_img_id, caption=caption)
-        await message.reply(
-            msgs.invite_help.format(
-                refs=refs, invite_link=invite_link, credits=credits, invitation_gift=msgs.invitation_gift
-            ),
-            reply_markup=return_to_menu,
-        )
+            # check the gender of input and selected voice
+            model_data = get_value_from_json(MODELS_DIR, model_name)
+            model_gender = model_data["gender"]
 
-    elif data == "credits":
-        # Get user's current credits
-        user_data = get_users_columns(chat_id, "credits")
-        if user_data is None:
-            return
+            user_data = get_users_columns(chat_id, "gender")
+            user_gender = user_data["gender"]
 
-        credits = user_data["credits"]
+            # same gender for user input and selected model
+            if user_gender == model_gender:
+                buttons = create_reply_markup(msgs.pitch_btns)
+                await message.reply(msgs.pitch_select, reply_markup=buttons)
 
-        await message.reply(
-            msgs.credits_message.format(credits=credits, amdin=msgs.admin_username),
-            reply_markup=return_to_menu,
-        )
+            # different gender for model and input
+            else:
+                # male to female => 12
+                if (user_gender == "male") & (model_gender == "female"):
+                    pitch = 12
 
-    elif data == "help":
-        await message.reply(
-            msgs.help_msg.format(admin_username=msgs.admin_username),
-            reply_markup=return_to_menu,
-        )
+                # female to male => -12
+                elif (user_gender == "female") & (model_gender == "male"):
+                    pitch = -12
 
-    elif data == "convert_voice":
-        await message.reply(msgs.convert_msg, reply_markup=return_to_menu)
+                await process_pitch_conversion(
+                    chat_id, data=None, message=message, pitch_based_on_gender=pitch
+                )
 
-    elif data == "menu":
-        buttons = create_reply_markup(msgs.menu_btns)
-        await message.reply(msgs.menu_msg, reply_markup=buttons)
+        # selected the gender
+        elif data.startswith("gender_"):
+            gender = data.replace("gender_", "")
+            update_user_column(chat_id, "gender", gender)
 
-    elif data == "joined_channels":
-        not_joined_channels = await is_joined(bot, chat_id)
-
-        # Check if user has joined required channels
-        if not_joined_channels:
-            buttons = joined_channels_button(not_joined_channels)
-            reply_markup = InlineKeyboardMarkup(
-                joined_channels_button(not_joined_channels)
+            # generate the available models as buttons from models.json
+            buttons = create_reply_markup(generate_model_list(MODELS_DIR))
+            await message.reply(
+                msgs.voice_select, reply_markup=buttons, parse_mode=enums.ParseMode.HTML
             )
-            await message.reply(msgs.join_channels, reply_markup=reply_markup)
 
-        else:
-            await message.reply(msgs.start.format(username=username))
+        elif data == "invite":
+            # Get user's current refs count
+            user_data = get_users_columns(chat_id, ["refs", "credits"])
+            if user_data is None:
+                return
 
-    
-    elif data.startswith("pitch_"):
-        # check if user has enough credits
-        user = get_users_columns(chat_id, ["duration", "credits"])
-        credits = user["credits"]
-        duration = user["duration"]
+            refs = user_data["refs"]
+            credits = user_data["credits"]
 
-        if credits < duration:
-            await message.reply(msgs.no_credits)
-            return
+            # Create unique invite link
+            bot_info = await client.get_me()
+            invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
+            caption = f"{msgs.banner_msg}\n\n{invite_link}"
 
-        # update user credits
-        new_credits = credits - duration
-        update_user_column(chat_id, "credits", new_credits)
+            await client.send_photo(chat_id, msgs.banner_img_id, caption=caption)
+            await message.reply(
+                msgs.invite_help.format(
+                    refs=refs,
+                    invite_link=invite_link,
+                    credits=credits,
+                    invitation_gift=msgs.invitation_gift,
+                ),
+                reply_markup=return_to_menu,
+            )
 
-        # get pitch
-        pitch = int(data.replace("pitch_", ""))
+        elif data == "credits":
+            # Get user's current credits
+            user_data = get_users_columns(chat_id, "credits")
+            if user_data is None:
+                return
 
-        # get model from database
-        model_name = get_users_columns(chat_id, "model_name")["model_name"]
+            credits = user_data["credits"]
 
-        # get model data from models.json
-        model_data = get_value_from_json(MODELS_DIR, model_name)
-        model_title = model_data["name"]
-        model_url = model_data["url"]
-        model_0_pitch = model_data["pitch"]
-        audio = get_users_columns(chat_id, "audio")["audio"]
-        rvc_model = model_data["type"]
+            await message.reply(
+                msgs.credits_message.format(credits=credits, amdin=msgs.admin_username),
+                reply_markup=return_to_menu,
+            )
 
-        # create rvc conversion to replicate
-        prediciton = rvc.create_rvc_conversion(
-            audio,
-            model_url,
-            chat_id,
-            pitch=pitch + model_0_pitch,
-            voice_name=model_title,
-            rvc_model=rvc_model,
-        )
+        elif data == "help":
+            await message.reply(
+                msgs.help_msg.format(admin_username=msgs.admin_username),
+                reply_markup=return_to_menu,
+            )
 
-        #add to generations table
-        add_generation(chat_id, audio, model_name, duration, prediciton)
+        elif data == "convert_voice":
+            await message.reply(msgs.convert_msg, reply_markup=return_to_menu)
 
-        await message.reply(msgs.proccessing_emojie)
-        await message.reply(msgs.proccessing.format(credits=new_credits))
+        elif data == "menu":
+            buttons = create_reply_markup(msgs.menu_btns)
+            await message.reply(msgs.menu_msg, reply_markup=buttons)
+
+        elif data == "joined_channels":
+            not_joined_channels = await is_joined(bot, chat_id)
+
+            # Check if user has joined required channels
+            if not_joined_channels:
+                buttons = joined_channels_button(not_joined_channels)
+                reply_markup = InlineKeyboardMarkup(
+                    joined_channels_button(not_joined_channels)
+                )
+                await message.reply(msgs.join_channels, reply_markup=reply_markup)
+
+            else:
+                await message.reply(msgs.start.format(username=username))
+
+        elif data.startswith("pitch_"):
+            # check if user has enough credits
+            await process_pitch_conversion(chat_id, data, message)
+
+    except Exception as e:
+        logging.error(f"Error in callback: {str(e)}")
+        await client.send_message(msgs.admin_id, f"Error in callback: {str(e)}")
 
 
 @bot.on_message(filters.command("invite"))
@@ -333,7 +340,12 @@ async def invite_command(client, message):
 
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
     await message.reply(
-        msgs.invite_help.format(refs=refs, invite_link=invite_link, credits=credits,invitation_gift=msgs.invitation_gift),
+        msgs.invite_help.format(
+            refs=refs,
+            invite_link=invite_link,
+            credits=credits,
+            invitation_gift=msgs.invitation_gift,
+        ),
         reply_markup=return_to_menu,
     )
 
@@ -586,6 +598,56 @@ def joined_channels_button(not_joined_channels):
         ]
     )
     return buttons
+
+
+async def process_pitch_conversion(chat_id, data, message, pitch_based_on_gender=None):
+    # check if user has enough credits
+    user = get_users_columns(chat_id, ["duration", "credits"])
+    credits = user["credits"]
+    duration = user["duration"]
+
+    if credits < duration:
+        await message.reply(msgs.no_credits)
+        return
+
+    # update user credits
+    new_credits = credits - duration
+    update_user_column(chat_id, "credits", new_credits)
+
+    # get pitch | if data has been passed it means it is calling from pitch selection
+    if data:
+        pitch = int(data.replace("pitch_", ""))
+
+    # it means it has beed detected from gender selection
+    elif pitch_based_on_gender is not None:
+        pitch = pitch_based_on_gender
+
+    # get model from database
+    model_name = get_users_columns(chat_id, "model_name")["model_name"]
+
+    # get model data from models.json
+    model_data = get_value_from_json(MODELS_DIR, model_name)
+    model_title = model_data["name"]
+    model_url = model_data["url"]
+    model_0_pitch = model_data["pitch"]
+    audio = get_users_columns(chat_id, "audio")["audio"]
+    rvc_model = model_data["type"]
+
+    # create rvc conversion to replicate
+    prediction = rvc.create_rvc_conversion(
+        audio,
+        model_url,
+        chat_id,
+        pitch=pitch + model_0_pitch,
+        voice_name=model_title,
+        rvc_model=rvc_model,
+    )
+
+    # add to generations table
+    add_generation(chat_id, audio, model_name, duration, prediction)
+
+    await message.reply(msgs.proccessing_emojie)
+    await message.reply(msgs.proccessing.format(credits=new_credits))
 
 
 logging.basicConfig(level=logging.INFO)
