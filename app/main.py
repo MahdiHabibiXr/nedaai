@@ -327,8 +327,9 @@ async def invite_command(client, message):
     # Create unique invite link
     bot_info = await client.get_me()
     invite_link = f"https://t.me/{bot_info.username}?start={chat_id}"
+    caption = f"{msgs.banner_msg}\n\n{invite_link}"
 
-    await message.reply(f"{msgs.banner_msg}\n\n{invite_link}")
+    await client.send_photo(chat_id, msgs.banner_img_id, caption=caption)
 
     return_to_menu = create_reply_markup([msgs.return_to_menu_button])
     await message.reply(

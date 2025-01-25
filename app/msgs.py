@@ -24,12 +24,12 @@ pitch_select = """
 pitch_btns = [
     ["🗣 تبدیل صدای زنانه به مردانه", "callback", "pitch_-12", 0],
     # ["🔻 بم+9", "callback", "pitch_-9", 1],
-    ["🔻 بم+6", "callback", "pitch_-6", 1],
-    ["🔻 بم+3", "callback", "pitch_-3", 1],
+    ["🔺 بم+6", "callback", "pitch_-6", 1],
+    ["🔺 بم+3", "callback", "pitch_-3", 1],
     ["🔸 بدون تغییر | پیش‌فرض", "callback", "pitch_0", 2],
     # ["🔺 زیر+9", "callback", "pitch_9", 3],
-    ["🔺 زیر+6", "callback", "pitch_6", 3],
-    ["🔺 زیر+3", "callback", "pitch_3", 3],
+    ["🔻 زیر+6", "callback", "pitch_6", 3],
+    ["🔻 زیر+3", "callback", "pitch_3", 3],
     ["🧔‍♀️ تبدیل صدای مردانه به زنانه", "callback", "pitch_12", 4],
 ]
 proccessing_emojie = "⏳"
@@ -130,4 +130,4 @@ invite_successfully = (
     "🎁 {gift_credits} ثانیه اعتبار به شما تعلق گرفت.\n\n" 
 )
 channels_list = ["@nedaaiofficial"]
-banner_img_id = "AgACAgQAAxkBAAIKUGeU8O23jaNsFI9C4FDI1lDHjkBNAAKnxzEbnfugUDtlu3g70pZDAAgBAAMCAAN5AAceBA"
+banner_img_id = "AgACAgQAAxkBAAILAmeVA8R4YjsLLh42tnXV2lfsUHX4AAJZxjEbdYGpUAjaRPN3EpG6AAgBAAMCAAN5AAceBA"
