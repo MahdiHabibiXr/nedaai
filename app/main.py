@@ -59,6 +59,8 @@ async def is_joined(app, user_id):
 async def handle_file(client, message):
     chat_id = message.chat.id
     logging.basicConfig(level=logging.INFO)
+    print(message.document)
+
     try:
         file = await message.download(f"./{MODELS_DIR}")
         await message.reply(file)
