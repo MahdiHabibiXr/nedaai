@@ -22,8 +22,8 @@ pitch_select = """
 pitch_btns = [
     # ["🗣 تبدیل صدای زنانه به مردانه", "callback", "pitch_-12", 0],
     # ["🔻 بم+9", "callback", "pitch_-9", 1],
-    ["🔺 خیلی بم‌تر", "callback", "pitch_-6", 1],
     ["🔺 بم‌تر", "callback", "pitch_-3", 1],
+    ["🔺 خیلی بم‌تر", "callback", "pitch_-6", 1],
     ["🔸 بدون تغییر | پیش‌فرض", "callback", "pitch_0", 2],
     # ["🔺 زیر+9", "callback", "pitch_9", 3],
     ["🔻 زیرتر", "callback", "pitch_3", 3],
