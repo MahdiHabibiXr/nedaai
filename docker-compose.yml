@@ -1,6 +1,7 @@
 services:
   bot:
     build: ./app
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
