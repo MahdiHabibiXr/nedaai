@@ -643,6 +643,7 @@ async def process_pitch_conversion(chat_id, data, message, pitch_based_on_gender
         pitch=pitch + model_0_pitch,
         voice_name=model_title,
         rvc_model=rvc_model,
+        duration=duration,
     )
 
     # add to generations table
