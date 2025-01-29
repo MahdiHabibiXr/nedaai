@@ -88,17 +88,26 @@ async def handle_reply(client, message):
         await message.reply(reply.video.file_)
 
 
+@bot.on_message(filters.user(msgs.admin_id) & filters.forwarded)
+async def handle_forward(client, message):
+    await message.reply(message.forward_from.id)
+
+
 @bot.on_message(filters.user(msgs.admin_id) & filters.regex("/admin"))
 async def amdin(client, message):
     message.chat.id
     text = message.text
     message.from_user.mention
 
-    if ("/admin_get_credits_") in text:
-        user_id = text.replace("/get_credits_", "")
-        user_data = get_users_columns(user_id, "credits")
-        credits = user_data["credits"]
-        await message.reply(credits)
+    if ("/get_credits ") in text:
+        user_id = text.replace("/admin/get_credits ", "")
+        if user_exists(user_id):
+            user_data = get_users_columns(user_id, "credits")
+            print(user_data)
+            credits = user_data["credits"]
+            await message.reply(credits)
+        else:
+            await message.reply(f"user {user_id} does not exists")
 
     elif ("/config") in text:
         if not os.path.exists("voice_cloner.db"):
@@ -117,6 +126,21 @@ async def amdin(client, message):
 
         await message.reply(msgs.banner_img_id)
         # await client.send_photo(msgs.admin_id, int(banner_img_id))
+
+    elif ("/add_credits") in text:
+        text = text.replace("/admin/add_credits", "").split(" ")
+        print(text)
+        user_chat_id = text[1]
+        print(user_chat_id)
+        amount = text[2]
+        print(amount)
+        if user_exists(user_chat_id):
+            update_user_column(user_chat_id, "credits", amount, increment=True)
+            await message.reply(
+                f"added {amount} credits to {user_chat_id} user credits updated"
+            )
+        else:
+            await message.reply(f"user {user_chat_id} does not exists")
 
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)
