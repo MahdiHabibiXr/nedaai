@@ -26,6 +26,8 @@ from db import (
     create_generations_table,
     add_generation,
     add_gender_column_to_users,
+    generate_users_report,
+    generate_generations_report,
 )
 from uploader import upload_file
 
@@ -129,18 +131,45 @@ async def amdin(client, message):
 
     elif ("/add_credits") in text:
         text = text.replace("/admin/add_credits", "").split(" ")
-        print(text)
         user_chat_id = text[1]
-        print(user_chat_id)
         amount = text[2]
-        print(amount)
+
         if user_exists(user_chat_id):
             update_user_column(user_chat_id, "credits", amount, increment=True)
+            new_credits = get_users_columns(user_chat_id, "credits")["credits"]
+
             await message.reply(
                 f"added {amount} credits to {user_chat_id} user credits updated"
             )
+            await client.send_message(
+                user_chat_id,
+                msgs.added_credits.format(credits=amount, new_credits=new_credits),
+            )
         else:
             await message.reply(f"user {user_chat_id} does not exists")
+
+    elif ("/set_credits") in text:
+        text = text.replace("/admin/set_credits", "").split(" ")
+        user_chat_id = text[1]
+        amount = text[2]
+
+        if user_exists(user_chat_id):
+            update_user_column(user_chat_id, "credits", amount, increment=False)
+            new_credits = get_users_columns(user_chat_id, "credits")["credits"]
+
+            await message.reply(
+                f"set {amount} credits to {user_chat_id} user credits updated"
+            )
+
+        else:
+            await message.reply(f"user {user_chat_id} does not exist")
+
+    elif ("/report") in text:
+        users_report = generate_users_report()
+        gens_report = generate_generations_report()
+
+        await message.reply(users_report)
+        await message.reply(gens_report)
 
 
 @bot.on_message((filters.regex("/start") | filters.regex("/Start")) & filters.private)

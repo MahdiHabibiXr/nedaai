@@ -188,3 +188,128 @@ def add_gender_column_to_users():
         print("Gender column already exists in users table.")
 
     conn.close()
+
+
+def generate_users_report():
+    """
+    Generate a report about the users in the 'users' table.
+
+    Returns:
+        str: A formatted string report about the users.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+
+        if total_users == 0:
+            return "No users found in the database."
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE credits = 120")
+        credits_120 = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM users WHERE credits <= 120 AND credits > 100"
+        )
+        credits_120_100 = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM users WHERE credits <= 100 AND credits > 50"
+        )
+        credits_100_50 = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM users WHERE credits <= 50 AND credits > 25"
+        )
+        credits_50_25 = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM users WHERE credits <= 25 AND credits >= 0"
+        )
+        credits_25_0 = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE audio IS NOT NULL")
+        audio_not_none = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE refs > 0")
+        refs_greater_than_0 = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE gender = 'male'")
+        male_users = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM users WHERE gender = 'female'")
+        female_users = cursor.fetchone()[0]
+
+        report_lines = [
+            "📊 **Users Report:**\n",
+            f"👥 **Total:** {total_users}\n",
+            f"💳 **Credits = 120:** {credits_120} ({credits_120 / total_users * 100:.2f}%)",
+            f"💳 **Credits 120-100:** {credits_120_100} ({credits_120_100 / total_users * 100:.2f}%)",
+            f"💳 **Credits 100-50:** {credits_100_50} ({credits_100_50 / total_users * 100:.2f}%)",
+            f"💳 **Credits 50-25:** {credits_50_25} ({credits_50_25 / total_users * 100:.2f}%)",
+            f"💳 **Credits 25-0:** {credits_25_0} ({credits_25_0 / total_users * 100:.2f}%)\n",
+            f"🎧 **Audio not none:** {audio_not_none} ({audio_not_none / total_users * 100:.2f}%)\n",
+            f"🔗 **Refs > 0:** {refs_greater_than_0} ({refs_greater_than_0 / total_users * 100:.2f}%)\n",
+            f"♂️ **Male:** {male_users} ({male_users / total_users * 100:.2f}%)",
+            f"♀️ **Female:** {female_users} ({female_users / total_users * 100:.2f}%)",
+        ]
+
+        return "\n".join(report_lines)
+    except sqlite3.Error as e:
+        return f"Database error: {e}"
+    finally:
+        conn.close()
+
+
+def generate_generations_report():
+    """
+    Generate a report about the generations in the 'generations' table.
+
+    Returns:
+        str: A formatted string report about the generations.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT COUNT(*) FROM generations")
+        total_generations = cursor.fetchone()[0]
+
+        if total_generations == 0:
+            return "No generations found."
+
+        cursor.execute("SELECT SUM(duration) FROM generations")
+        total_duration = cursor.fetchone()[0] or 0
+
+        cursor.execute("SELECT COUNT(DISTINCT chat_id) FROM generations")
+        unique_users = cursor.fetchone()[0]
+
+        average_duration_per_user = total_duration / unique_users if unique_users else 0
+
+        cursor.execute(
+            "SELECT model_name, COUNT(*), SUM(duration) FROM generations GROUP BY model_name ORDER BY COUNT(*) DESC"
+        )
+        model_stats = cursor.fetchall()
+
+        report_lines = [
+            "📊 **Generations Report:**\n",
+            f"🔢 **Total:** {total_generations}",
+            f"⏳ **Duration:** {total_duration} sec",
+            f"👥 **Users:** {unique_users}",
+            f"📈 **Avg/User:** {average_duration_per_user:.2f} sec",
+            f"🛠️ **Models:** {len(model_stats)}\n",
+        ]
+
+        for rank, (model_name, count, duration) in enumerate(model_stats, start=1):
+            percentage = (count / total_generations) * 100
+            report_lines.append(
+                f"{rank}. **{model_name}:** {percentage:.2f}%, {count} generations, {duration} sec"
+            )
+
+        return "\n".join(report_lines)
+    except sqlite3.Error as e:
+        return f"Database error: {e}"
+    finally:
+        conn.close()
